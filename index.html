@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,9 +8,7 @@
 <title>Memory Match - Brain Challenge</title>
 
 <style>
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
@@ -22,38 +21,34 @@ body {
 header {
   background: #243b70;
   color: white;
-  padding: 25px 15px;
+  padding: 24px 12px;
 }
 
-header h1 {
-  margin: 0;
-  font-size: 30px;
-}
+header h1 { margin: 0; }
 
 main {
-  max-width: 550px;
+  max-width: 650px;
   margin: 25px auto;
   padding: 15px;
 }
 
 .stats {
   display: flex;
-  justify-content: space-around;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 8px;
+  margin-bottom: 18px;
 }
 
 .stat {
-  background: white;
-  padding: 12px;
-  border-radius: 12px;
   flex: 1;
+  background: white;
+  padding: 12px 5px;
+  border-radius: 12px;
   box-shadow: 0 2px 8px #0001;
 }
 
 .stat strong {
   display: block;
-  font-size: 22px;
+  font-size: 21px;
   color: #3459a5;
   margin-top: 5px;
 }
@@ -61,22 +56,18 @@ main {
 .game-board {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+  gap: 9px;
 }
 
 .card {
-  height: 105px;
+  min-width: 0;
+  height: 85px;
   background: #4969b2;
   color: white;
   border: none;
   border-radius: 12px;
-  font-size: 34px;
+  font-size: 30px;
   cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.card:hover {
-  transform: scale(1.04);
 }
 
 .card.flipped,
@@ -92,21 +83,27 @@ main {
   cursor: default;
 }
 
-button.restart {
+button.action {
   background: #168653;
   color: white;
   border: none;
-  padding: 13px 25px;
+  padding: 13px 22px;
   border-radius: 9px;
   font-size: 16px;
   cursor: pointer;
-  margin: 22px;
+  margin: 12px 5px;
+}
+
+#nextButton {
+  background: #e59b20;
+  display: none;
 }
 
 #message {
   font-weight: bold;
-  min-height: 25px;
   color: #168653;
+  min-height: 25px;
+  line-height: 1.5;
 }
 
 footer {
@@ -115,10 +112,9 @@ footer {
 }
 
 @media (max-width: 400px) {
-  .card {
-    height: 78px;
-    font-size: 27px;
-  }
+  .card { height: 68px; font-size: 24px; }
+  .stat { font-size: 13px; }
+  .stat strong { font-size: 18px; }
 }
 </style>
 </head>
@@ -131,6 +127,9 @@ footer {
 </header>
 
 <main>
+
+  <h2 id="levelTitle">Level 1</h2>
+  <p id="levelDescription">Find all the matching pairs!</p>
 
   <div class="stats">
     <div class="stat">
@@ -149,21 +148,30 @@ footer {
 
   <div class="game-board" id="board"></div>
 
-  <p id="message">Find all 6 matching pairs!</p>
+  <p id="message">Good luck! Find your first pair.</p>
 
-  <button class="restart" onclick="startGame()">
-    🔄 Restart Game
+  <button class="action" onclick="startLevel()">
+    🔄 Restart Level
+  </button>
+
+  <button class="action" id="nextButton" onclick="nextLevel()">
+    Next Level ➡️
   </button>
 
 </main>
 
 <footer>
-  Memory Match © 2026 | Play and train your brain!
+  Memory Match © 2026 | Train Your Brain!
 </footer>
 
 <script>
-const symbols = ["🍎", "🚀", "🐱", "⚽", "🌟", "🎵"];
+const symbols = [
+  "🍎","🚀","🐱","⚽","🌟","🎵","🍕","🐶",
+  "🌈","🎁","🦋","🍓","🐼","🌻","🚗","🎈",
+  "🐸","🍉","⭐","🎨"
+];
 
+let currentLevel = 1;
 let cards = [];
 let firstCard = null;
 let secondCard = null;
@@ -173,31 +181,55 @@ let matches = 0;
 let seconds = 0;
 let timerInterval = null;
 let started = false;
+let finished = false;
 
-function startGame() {
+function getPairs() {
+  return 5 + currentLevel;
+}
+
+function startLevel() {
   clearInterval(timerInterval);
 
-  cards = [...symbols, ...symbols]
-    .sort(() => Math.random() - 0.5);
+  const pairCount = getPairs();
 
-  firstCard = null;
-  secondCard = null;
-  locked = false;
   moves = 0;
   matches = 0;
   seconds = 0;
+  firstCard = null;
+  secondCard = null;
+  locked = false;
   started = false;
+  finished = false;
+
+  document.getElementById("levelTitle").textContent =
+    "🏆 Level " + currentLevel;
+
+  document.getElementById("levelDescription").textContent =
+    "Find " + pairCount + " matching pairs!";
 
   document.getElementById("moves").textContent = "0";
-  document.getElementById("matches").textContent = "0 / 6";
+  document.getElementById("matches").textContent =
+    "0 / " + pairCount;
   document.getElementById("timer").textContent = "0s";
+
   document.getElementById("message").textContent =
-    "Find all 6 matching pairs!";
+    "Good luck! Find your first pair.";
+
+  document.getElementById("nextButton").style.display = "none";
+
+  const selected = symbols.slice(0, pairCount);
+  cards = [...selected, ...selected];
+
+  // Shuffle the cards
+  for (let i = cards.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [cards[i], cards[j]] = [cards[j], cards[i]];
+  }
 
   const board = document.getElementById("board");
   board.innerHTML = "";
 
-  cards.forEach((symbol, index) => {
+  cards.forEach(symbol => {
     const card = document.createElement("button");
     card.className = "card";
     card.textContent = "?";
@@ -211,6 +243,7 @@ function startTimer() {
   if (started) return;
 
   started = true;
+
   timerInterval = setInterval(() => {
     seconds++;
     document.getElementById("timer").textContent =
@@ -219,8 +252,11 @@ function startTimer() {
 }
 
 function flipCard(card, symbol) {
-  if (locked || card.classList.contains("flipped") ||
-      card.classList.contains("matched")) return;
+  if (locked || finished ||
+      card.classList.contains("flipped") ||
+      card.classList.contains("matched")) {
+    return;
+  }
 
   startTimer();
 
@@ -242,17 +278,16 @@ function flipCard(card, symbol) {
     secondCard.card.classList.add("matched");
 
     matches++;
+
     document.getElementById("matches").textContent =
-      matches + " / 6";
+      matches + " / " + getPairs();
 
     resetTurn();
 
-    if (matches === 6) {
-      clearInterval(timerInterval);
-      document.getElementById("message").textContent =
-        "🎉 Congratulations! You won in " + moves +
-        " moves and " + seconds + " seconds!";
+    if (matches === getPairs()) {
+      winLevel();
     }
+
   } else {
     locked = true;
 
@@ -274,7 +309,35 @@ function resetTurn() {
   locked = false;
 }
 
-startGame();
+function winLevel() {
+  finished = true;
+  clearInterval(timerInterval);
+
+  const message = document.getElementById("message");
+
+  if (currentLevel === 10) {
+    message.textContent =
+      "🎉 Amazing! You completed all 10 levels! You are a Memory Master!";
+  } else {
+    message.textContent =
+      "🎉 Level completed! You finished in " +
+      moves + " moves and " + seconds + " seconds. Ready for the next challenge?";
+  }
+
+  if (currentLevel < 10) {
+    document.getElementById("nextButton").style.display =
+      "inline-block";
+  }
+}
+
+function nextLevel() {
+  if (currentLevel >= 10) return;
+
+  currentLevel++;
+  startLevel();
+}
+
+startLevel();
 </script>
 
 </body>
